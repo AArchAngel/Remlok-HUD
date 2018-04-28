@@ -17,6 +17,7 @@ public class DataDump
     public DateTime Expiry { get; set; }
     public string VictimFaction { get; set; }
     public string[] StarPos { get; set; }
+    //public string Name;
 }
 public class MissionAdd
 {
@@ -37,6 +38,8 @@ public class MissionAdd
     public string y;
     public string z;
     public int TotalKills = 0;
+    public string type;
+    public bool active = false;
 
 }
 public class MissionEnd

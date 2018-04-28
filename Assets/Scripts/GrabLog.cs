@@ -20,41 +20,10 @@ public class GrabLog : MonoBehaviour
     private string Countdown;
     private Vector3 PlayerLocation;
     private string[] location = new string[3];
+    private string MissionType;
 
 
-    //Highest reward mission parameters
-    private string MaxCreditsID;
-    private string MaxCreditsTargetType;
-    private int MaxCreditsKillCount;
-    private string MaxCreditsTargetFaction;
-    private string MaxCreditsDestination;
-    private int MaxCreditsReward;
-    private DateTime MaxCreditsExpiry;
-    private string MaxCreditsCountDown;
-    private float MaxCreditsDistance;
 
-    //Nearest to time elapsing mission parameters
-    private string MinTimeID;
-    private string MinTimeTargetType;
-    private int MinTimeKillCount;
-    private string MinTimeTargetFaction;
-    private string MinTimeDestination;
-    private int MinTimeReward;
-    private DateTime MinTimeExpiry;
-    private string MinTimeCountDown;
-    private float MinTimeDistance;
-
-
-    //Closest mission parameters
-    private string MinDistanceID;
-    private string MinDistanceTargetType;
-    private int MinDistanceKillCount;
-    private string MinDistanceTargetFaction;
-    private string MinDistanceDestination;
-    private int MinDistanceReward;
-    private DateTime MinDistanceExpiry;
-    private string MinDistanceCountDown;
-    private float MinDistanceDistance;
 
     public List<DataDump> JournalContents = new List<DataDump>();
     public List<MissionAdd> ActiveMissionList = new List<MissionAdd>();
@@ -64,6 +33,11 @@ public class GrabLog : MonoBehaviour
     public List<PlayerInfo> playerinfo = new List<PlayerInfo>();
 
     public Transform distance;
+
+    public Sprite Active;
+    public Sprite Mission;
+    public Sprite Blank;
+    public Sprite ActiveMission;
 
     private void Start()
     {
@@ -80,10 +54,8 @@ public class GrabLog : MonoBehaviour
         }
         else
         {
-            MissionDetails();
-            UpdateCreditMission();
-            UpdateTimeMission();
-            UpdateDistanceMission();
+         UpdateMissionList();
+
         }
     }
 
@@ -136,6 +108,45 @@ public class GrabLog : MonoBehaviour
         {
             JournalUpdate();
         }
+        if (Input.GetKeyDown("1"))
+        {
+            Reward();
+        }
+        if (Input.GetKeyDown("2"))
+        {
+            Distance();
+        }
+        if (Input.GetKeyDown("3"))
+        {
+            Time();
+        }
+        if (Input.GetKeyDown("4"))
+        {
+            foreach(var item in ActiveMissionList)
+            {
+                item.active = false;
+            }
+            ActiveMissionList[0].active = true;
+            UpdateMissionList();
+        }
+        if (Input.GetKeyDown("5"))
+        {
+            foreach (var item in ActiveMissionList)
+            {
+                item.active = false;
+            }
+            ActiveMissionList[1].active = true;
+            UpdateMissionList();
+        }
+        if (Input.GetKeyDown("6"))
+        {
+            foreach (var item in ActiveMissionList)
+            {
+                item.active = false;
+            }
+            ActiveMissionList[2].active = true;
+            UpdateMissionList();
+        }
 
     }
 
@@ -173,6 +184,24 @@ public class GrabLog : MonoBehaviour
                 DataDump datadump = JsonConvert.DeserializeObject<DataDump>(line);
                 // Populate accepted missions
 
+                try
+                {
+                    if (datadump.name.StartsWith("Mission_Massacre"))
+
+                    {
+                        MissionType = "Kill";
+                    }
+                    if (datadump.name.StartsWith("delivery"))
+
+                    {
+                        MissionType = "delivery";
+                    }
+                }
+                catch(Exception)
+                {
+
+                }
+
                 if (datadump.@event == "FSDJump")
                 {
                     PlayerLocation = new Vector3(float.Parse(datadump.StarPos[0]), float.Parse(datadump.StarPos[1]), float.Parse(datadump.StarPos[2]));
@@ -191,6 +220,8 @@ public class GrabLog : MonoBehaviour
                     }
                     else
                     {
+                       
+
                         ActiveMissionList.Add(new MissionAdd
                         {
                             AcceptedTime = datadump.timestamp,
@@ -201,7 +232,8 @@ public class GrabLog : MonoBehaviour
                             TargetType_Localised = datadump.TargetType_Localised,
                             TargetFaction = datadump.TargetFaction,
                             DestinationSystem = datadump.DestinationSystem,
-                            Expiry = datadump.Expiry
+                            Expiry = datadump.Expiry,
+                            type = MissionType
                         });
                     }
                 }
@@ -302,7 +334,7 @@ public class GrabLog : MonoBehaviour
                 if(item.TargetFaction == kills.Faction && item.AcceptedTime < kills.KillTime)
                 {
                     item.TotalKills++;
-                    Debug.Log(item.TargetFaction + item.TotalKills);
+
                 }
             }
         }
@@ -323,116 +355,98 @@ public class GrabLog : MonoBehaviour
             }
             catch (Exception)
             {
-                Debug.Log(item.MissionID + "Mission Not yet complete");
+
             }
         }
 
         foreach (var sys in ActiveMissionList)
         {
-            Debug.Log(sys.DestinationSystem);
             try
             {
                 Systems location = EDDBData.Find(x => x.name.Contains(sys.DestinationSystem));
                 sys.Location = new Vector3(float.Parse(location.x), float.Parse(location.y) , float.Parse(location.z));
                 float dist = Vector3.Distance(sys.Location, PlayerLocation);
                 sys.distance = dist;
-                Debug.Log(PlayerLocation);
-                Debug.Log(sys.Location);
-                Debug.Log(sys.distance);
             }
             catch(Exception)
             {
-
+                
             }
         }
     }
-    
-    void MissionDetails()
+
+    public void Reward()
     {
-        //Sort list by reward
         ActiveMissionList = ActiveMissionList.OrderByDescending(x => x.reward).ToList();
-        MaxCreditsID = ActiveMissionList[0].MissionID;
-        MaxCreditsTargetType = ActiveMissionList[0].TargetType_Localised;
-        MaxCreditsKillCount = ActiveMissionList[0].KillCount;
-        MaxCreditsTargetFaction = ActiveMissionList[0].TargetFaction;
-        MaxCreditsDestination = ActiveMissionList[0].DestinationSystem;
-        MaxCreditsReward = ActiveMissionList[0].reward;
-        MaxCreditsExpiry = ActiveMissionList[0].Expiry;
-        MaxCreditsCountDown = ActiveMissionList[0].Countdown;
-        MaxCreditsDistance = ActiveMissionList[0].distance;
+        UpdateMissionList();
+    }
+
+    public void Distance()
+    {
+        ActiveMissionList = ActiveMissionList.OrderBy(x => x.distance).ToList();
+        UpdateMissionList();
+    }
+    public void Time()
+    {
+        ActiveMissionList = ActiveMissionList.OrderBy(x => x.Expiry).ToList();
+        UpdateMissionList();
+    }
+
+    public void UpdateMissionList()
+    {
+        GameObject MissionDetails;
+        GameObject MissionImage;
+        GameObject MissionActive;
+
+        for (int i = 0; i < 3; i++)
+        {
+            TimeSpan countdown = ActiveMissionList[i].Expiry - DateTime.Now;
+            MissionDetails = GameObject.Find("Mission" + i);
+            MissionImage = GameObject.Find("MissionImage" + i);
+            MissionActive= GameObject.Find("MissionActive" + i);
+            Active = Resources.Load<Sprite>("Active");
+            Blank = Resources.Load<Sprite>("Blank");
+            if (ActiveMissionList[i].active == true)
+            {
+                MissionActive.GetComponent<Image>().overrideSprite = Active;
+            }
+            else
+            {
+                MissionActive.GetComponent<Image>().overrideSprite = Blank;
+            }
+
+            Mission = Resources.Load<Sprite>(ActiveMissionList[i].type);
+            MissionImage.GetComponent<Image>().overrideSprite = Mission;
+
+            MissionDetails.GetComponent<Text>().text = "Kill " + ActiveMissionList[i].KillCount + " " +ActiveMissionList[i].TargetType_Localised +
+                " System: " + ActiveMissionList[i].DestinationSystem + " - "+ ActiveMissionList[i].distance.ToString("f1") + " ly " +
+                "\n"+ ActiveMissionList[i].reward.ToString("n0") + " cr " + countdown.Hours.ToString() +" hrs " + countdown.Minutes.ToString() + " Minutes "+ countdown.Seconds.ToString() + " Secs remaining";
+        }
+        SetActiveMission();
+    }
+
+    public void SetActiveMission()
+    {
+        GameObject ActiveMissionDetails;
+        GameObject ImageActive;
+
+        ActiveMissionDetails = GameObject.Find("ActiveMissionDetails");
+        ImageActive = GameObject.Find("ImageActive");
+
+        foreach (var mission in ActiveMissionList)
+        {
+            if(mission.active == true)
+            {
+                Debug.Log(mission.type);
+                ActiveMission = Resources.Load<Sprite>(mission.type);
+                ImageActive.GetComponent<Image>().overrideSprite = ActiveMission;
+                ActiveMissionDetails.GetComponent<Text>().text = mission.KillCount-mission.TotalKills + "/" + mission.KillCount +
+                    "\n" +mission.TargetType_Localised + " " + mission.TargetFaction;            
+            }
+        }
+
         
 
-    ActiveMissionList = ActiveMissionList.OrderByDescending(x => x.Expiry).ToList();
-        MinTimeID = ActiveMissionList[0].MissionID;
-        MinTimeTargetType = ActiveMissionList[0].TargetType_Localised;
-        MinTimeKillCount = ActiveMissionList[0].KillCount;
-        MinTimeTargetFaction = ActiveMissionList[0].TargetFaction;
-        MinTimeDestination = ActiveMissionList[0].DestinationSystem;
-        MinTimeReward = ActiveMissionList[0].reward;
-        MinTimeExpiry = ActiveMissionList[0].Expiry;
-        MinTimeCountDown = ActiveMissionList[0].Countdown;
-        MinTimeDistance = ActiveMissionList[0].distance;
-
-        ActiveMissionList = ActiveMissionList.OrderBy(x => x.distance).ToList();
-        MinDistanceID = ActiveMissionList[0].MissionID;
-        MinDistanceTargetType = ActiveMissionList[0].TargetType_Localised;
-        MinDistanceKillCount = ActiveMissionList[0].KillCount;
-        MinDistanceTargetFaction = ActiveMissionList[0].TargetFaction;
-        MinDistanceDestination = ActiveMissionList[0].DestinationSystem;
-        MinDistanceReward = ActiveMissionList[0].reward;
-        MinDistanceExpiry = ActiveMissionList[0].Expiry;
-        MinDistanceCountDown = ActiveMissionList[0].Countdown;
-        MinDistanceDistance = ActiveMissionList[0].distance;
     }
-
-
-        void UpdateCreditMission()
-        {
-        GameObject MissionDetails;
-        MissionDetails = GameObject.Find("CreditMissionDetails");
-        TimeSpan countdown = MaxCreditsExpiry - DateTime.Now;
-        MaxCreditsCountDown = (countdown.Hours.ToString() + " - " + countdown.Minutes.ToString() + " - " + countdown.Seconds.ToString());
-        MissionDetails.GetComponent<Text>().text = "Kill " + MaxCreditsKillCount + " " + MaxCreditsTargetType +
-            "\nTarget faction: " + MaxCreditsTargetFaction +
-            "\nTarget system: " + MaxCreditsDestination +
-            "\nPayout: " + MaxCreditsReward.ToString("n0") + " Credits" +
-            "\nExpiry time: " + MaxCreditsExpiry.ToString("dd/MM/yyyy hh/mm/ss tt") +
-            "\nRemaining time: " + MaxCreditsCountDown +
-        "\nDistance to target " + MaxCreditsDistance + " LYR";
-
-    }
-
-    void UpdateTimeMission()
-    {
-        GameObject MissionDetails;
-        MissionDetails = GameObject.Find("TimeMissionDetails");
-        TimeSpan countdown = MinTimeExpiry - DateTime.Now;
-        MinTimeCountDown = (countdown.Hours.ToString() + " - " + countdown.Minutes.ToString() + " - " + countdown.Seconds.ToString());
-        MissionDetails.GetComponent<Text>().text = "Kill " + MinTimeKillCount + " " + MinTimeTargetType +
-            "\nTarget faction: " + MinTimeTargetFaction +
-            "\nTarget system: " + MinTimeDestination +
-            "\nPayout: " + MinTimeReward.ToString("n0") + " Credits" +
-            "\nExpiry time: " + MinTimeExpiry.ToString("dd/MM/yyyy hh/mm/ss tt") +
-            "\nRemaining time: " + MinTimeCountDown +
-            "\nDistance to target " + MinTimeDistance + " LYR";
-    }
-
-    void UpdateDistanceMission()
-    {
-        GameObject MissionDetails;
-        MissionDetails = GameObject.Find("DistanceMissionDetails");
-        TimeSpan countdown = MinDistanceExpiry - DateTime.Now;
-        MinDistanceCountDown = (countdown.Hours.ToString() + " - " + countdown.Minutes.ToString() + " - " + countdown.Seconds.ToString());
-        MissionDetails.GetComponent<Text>().text = "Kill " + MinDistanceKillCount + " " + MinDistanceTargetType +
-            "\nTarget faction: " + MinDistanceTargetFaction +
-            "\nTarget system: " + MinDistanceDestination +
-            "\nPayout: " + MinDistanceReward.ToString("n0") + " Credits" +
-            "\nExpiry time: " + MinDistanceExpiry.ToString("dd/MM/yyyy hh/mm/ss tt") +
-            "\nRemaining time: " + MinDistanceCountDown +
-            "\nDistance to target " + MinDistanceDistance + " LYR";
-    }
-
-
-   
 
 }
