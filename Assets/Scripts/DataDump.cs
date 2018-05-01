@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 [System.Serializable]
 public class DataDump
@@ -17,7 +19,13 @@ public class DataDump
     public DateTime Expiry { get; set; }
     public string VictimFaction { get; set; }
     public string[] StarPos { get; set; }
-    //public string Name;
+    public JournalArrays[] Active { get; set; }
+}
+[System.Serializable]
+public class JournalArrays
+{ 
+     public string MissionID { get; set; }
+    public string Name { get; set; }
 }
 public class MissionAdd
 {
