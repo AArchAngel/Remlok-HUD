@@ -24,6 +24,10 @@ public class GrabLog : MonoBehaviour
 
     private int ActiveMissionCount;
 
+    private int FileNumber = 0;
+    private int JournalStartMissions = 0;
+    private int FoundMissions = 0;
+
 
     public List<DataDump> JournalContents = new List<DataDump>();
     public List<MissionAdd> ActiveMissionList = new List<MissionAdd>();
@@ -63,7 +67,7 @@ public class GrabLog : MonoBehaviour
 
     void GetEDDB()
     {
-        Debug.Log("Starting system data load");
+  
         StartCoroutine(GetText());
     }
     IEnumerator GetText()
@@ -182,7 +186,9 @@ public class GrabLog : MonoBehaviour
         DirectoryInfo dir = new DirectoryInfo(directory);
         FileInfo[] info = dir.GetFiles().OrderByDescending(p => p.CreationTime).ToArray();
 
-        JournalEndPath = info[0].ToString();
+        JournalEndPath = info[FileNumber].ToString();
+
+
 
         // Read file lines using filestream to avoid access issues from readalllines
 
@@ -210,14 +216,20 @@ public class GrabLog : MonoBehaviour
 
                 if (datadump.@event == "Missions")
                 {
-
+                
 
                     try
                     {
-                        for (int i = 0; i < datadump.Active.Length; i++)
+                        if (JournalStartMissions == 0)
                         {
-                            ActiveMissionList.Add(new MissionAdd { MissionID = datadump.Active[i].MissionID.ToString() });
-
+                     
+                            JournalStartMissions = datadump.Active.Length;
+                            Debug.Log(JournalStartMissions);
+                            for (int i = 0; i < datadump.Active.Length; i++)
+                            {
+                                ActiveMissionList.Add(new MissionAdd { MissionID = datadump.Active[i].MissionID.ToString() });
+                              //  Debug.Log(ActiveMissionList[0]);
+                            }
                         }
                     }
                     catch(Exception)
@@ -269,15 +281,14 @@ public class GrabLog : MonoBehaviour
                     else
                     
                     {
-                        Debug.Log(ActiveMissionList.Count);
+                        
                         foreach (var mission in ActiveMissionList)
                         {
-                            Debug.Log(mission.MissionID);
+
                            // Debug.Log(datadump.MissionID);
                             if (mission.MissionID == datadump.MissionID)
-
                             {
-                                Debug.Log("Mission Added");
+                                FoundMissions = FoundMissions+1;
                                 mission.AcceptedTime = datadump.timestamp;
                                 mission.LocalisedName = datadump.LocalisedName;
                                 mission.reward = datadump.Reward;
@@ -288,7 +299,8 @@ public class GrabLog : MonoBehaviour
                                 mission.Expiry = datadump.Expiry;
                                 mission.type = MissionType;
 
-                                Debug.Log(mission.TargetFaction);
+                           
+
                             }
                         }
                        
@@ -297,21 +309,37 @@ public class GrabLog : MonoBehaviour
                 // Populate ended missions list
                 if (datadump.@event == "MissionCompleted" || datadump.@event == "MissionAbandoned" || datadump.@event == "MissionFailed")
                 {
-                    Debug.Log("Mission removed");
+                  
                     EndedMissionList.Add(new MissionEnd { MissionID = datadump.MissionID });
                 }
             }
 
         }
+  
 
-        MissionCleanse();
-        KillCountUpdate();
-        
+        ScrollJournals();    
+
     }
+
+    public void ScrollJournals()
+    {
+        if (FoundMissions < JournalStartMissions)
+        {
+            FileNumber = FileNumber+1;
+          
+            GetFile();
+        }
+        else
+        {
+            MissionCleanse();
+            KillCountUpdate();
+        }
+    }
+
 
     public void JournalUpdate()
     {
-        Debug.Log(ActiveMissionList.Count);
+
         // Calculate file information
         CurrentUser = System.Environment.UserName.ToString();
         directory = "C:/Users/" + CurrentUser + "/Saved Games/Frontier Developments/Elite Dangerous";
@@ -350,7 +378,7 @@ public class GrabLog : MonoBehaviour
                     if (item.TargetFaction == datadump.VictimFaction && item.AcceptedTime < datadump.timestamp)
                         {
                             item.TotalKills++;
-                            Debug.Log(item.TargetFaction + item.TotalKills);
+                     
                         }
                     }
                 }
@@ -512,7 +540,7 @@ public class GrabLog : MonoBehaviour
         {
             if(mission.active == true)
             {
-                Debug.Log(mission.type);
+     
                 ActiveMission = Resources.Load<Sprite>(mission.type);
                 ImageActive.GetComponent<Image>().overrideSprite = ActiveMission;
                 ActiveMissionDetails.GetComponent<Text>().text = mission.KillCount-mission.TotalKills + "/" + mission.KillCount +
