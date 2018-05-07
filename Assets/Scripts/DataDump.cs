@@ -16,6 +16,7 @@ public class DataDump
     public int Reward { get; set; }
     public string MissionID { get; set; }
     public string name { get; set; }
+    public string Target { get; set; }
     public DateTime Expiry { get; set; }
     public string VictimFaction { get; set; }
     public string[] StarPos { get; set; }
@@ -37,6 +38,7 @@ public class MissionAdd
     public string TargetType_Localised;
     public string TargetFaction;
     public int KillCount;
+    public string Target;
     public string DestinationSystem;
     public DateTime Expiry;
     public string Countdown;
