@@ -27,6 +27,7 @@ public class GrabLog : MonoBehaviour
     private int FileNumber = 0;
     private int JournalStartMissions = 0;
     private int FoundMissions = 0;
+    private int JournalLine = 0;
 
 
     public List<DataDump> JournalContents = new List<DataDump>();
@@ -46,7 +47,7 @@ public class GrabLog : MonoBehaviour
     private void Start()
     {
         GetEDDB();
-        GetFile();
+     //   GetFile();
         InvokeRepeating("UpdateLists", 0, 1);
     }
 
@@ -105,12 +106,12 @@ public class GrabLog : MonoBehaviour
 
         if (GetComponent<JournalWatcher>().runGrabLog == true)
         {
-            JournalUpdate();
+            GetFile();
             GetComponent<JournalWatcher>().runGrabLog = false;
         }
         if (Input.GetKeyDown("f"))
         {
-            JournalUpdate();
+            GetFile();
         }
         if (Input.GetKeyDown("1"))
         {
@@ -179,6 +180,7 @@ public class GrabLog : MonoBehaviour
 
     public void GetFile()
     {
+        Debug.Log("Running Update JournalLine status is " + JournalLine);
         // Generate file information
         CurrentUser = System.Environment.UserName.ToString();
         directory = "C:/Users/" + CurrentUser + "/Saved Games/Frontier Developments/Elite Dangerous";
@@ -195,53 +197,74 @@ public class GrabLog : MonoBehaviour
         FileStream fs = new FileStream(JournalEndPath, FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
         using (StreamReader read = new StreamReader(fs, true))
         {
-            JournalDump = read.ReadToEnd();
+            if (JournalLine == 2)
+            {
+                while (!read.EndOfStream)
+                {
+                    JournalDump = read.ReadLine();
+                }
+
+                Debug.Log("JournalDump contains " + JournalDump);
+            }
+            else
+            {
+
+                JournalDump = read.ReadToEnd();
+
+            }
         }
+
+
 
         string[] JournalData = JournalDump.Split("\n"[0]);
 
-
         foreach (string line in JournalData)
         {
-
             //Handle extra blank line at end of file
             if (line.Length == 0)
             { }
             else
-
             {
                 // Json Deserialise
                 DataDump datadump = JsonConvert.DeserializeObject<DataDump>(line);
-
-               
-
-
-                    if (datadump.@event == "Missions")
+//Start up 0 = no file read
+                if (JournalLine > 0)
+                {
+// Game load = 1 (when Commander event found)
+                    if (JournalLine == 1 && FileNumber == 0)
                     {
-
-
-                        try
+                        if (datadump.@event == "Missions")
                         {
-                            if (JournalStartMissions == 0)
-                            {
+                            //Set to 2 when Missions event found
+                            Debug.Log("Missions event found");
 
-                                JournalStartMissions = datadump.Active.Length;
-                                Debug.Log(JournalStartMissions);
-                                for (int i = 0; i < datadump.Active.Length; i++)
+                            try
+                            {
+                                if (JournalStartMissions == 0)
                                 {
-                                    ActiveMissionList.Add(new MissionAdd { MissionID = datadump.Active[i].MissionID.ToString() });
-                                    //  Debug.Log(ActiveMissionList[0]);
+                                    for (int i = 0; i < datadump.Active.Length; i++)
+                                    {
+                                        {
+
+                                            if (datadump.Active[i].Expires > 0)
+                                            {
+                                                JournalStartMissions++;
+                                                ActiveMissionList.Add(new MissionAdd { MissionID = datadump.Active[i].MissionID.ToString() });
+                                            }
+                                        }
+
+                                    }
                                 }
                             }
-                        }
-                        catch (Exception)
-                        {
+
+                            catch (Exception)
+                            {
+
+                            }
 
                         }
-
                     }
-                
-               
+
                     // Populate accepted missions
 
                     try
@@ -251,12 +274,16 @@ public class GrabLog : MonoBehaviour
                         {
                             MissionType = "Kill";
                         }
-                        if (datadump.name.StartsWith("delivery"))
+                        if (datadump.name.StartsWith("Mission_Delivery") || datadump.name.StartsWith("Mission_Collect"))
 
                         {
-                            MissionType = "delivery";
+                            MissionType = "Deliver";
                         }
                         if (datadump.name.StartsWith("Mission_Assass"))
+                        {
+                            MissionType = "Assassinate";
+                        }
+                        if (datadump.name.StartsWith("Mission_Courier"))
                         {
                             MissionType = "Assassinate";
                         }
@@ -279,6 +306,11 @@ public class GrabLog : MonoBehaviour
 
                     if (datadump.@event == "MissionAccepted")
                     {
+                        if (JournalLine == 2)
+                        {
+                            JournalStartMissions++;
+                            ActiveMissionList.Add(new MissionAdd { MissionID = datadump.MissionID.ToString() });
+                        }
 
                         if (datadump.name.StartsWith("Mission_Altr"))
                         {
@@ -337,13 +369,97 @@ public class GrabLog : MonoBehaviour
                             }
 
                         }
+                        else if (datadump.name.StartsWith("Mission_Courier"))
+
+                        {
+
+                            foreach (var mission in ActiveMissionList)
+                            {
+
+                                // Debug.Log(datadump.MissionID);
+                                if (mission.MissionID == datadump.MissionID)
+                                {
+                                    FoundMissions = FoundMissions + 1;
+                                    mission.AcceptedTime = datadump.timestamp;
+                                    mission.LocalisedName = datadump.LocalisedName;
+                                    mission.reward = datadump.Reward;
+                                    mission.TargetFaction = datadump.TargetFaction;
+                                    mission.DestinationSystem = datadump.DestinationSystem;
+                                    mission.DestinationStation = datadump.DestinationStation;
+                                    mission.Expiry = datadump.Expiry;
+                                    mission.type = MissionType;
+
+                                }
+                            }
+
+                        }
+                        else if (datadump.name.StartsWith("Mission_Deliver"))
+
+                        {
+
+                            foreach (var mission in ActiveMissionList)
+                            {
+
+                                // Debug.Log(datadump.MissionID);
+                                if (mission.MissionID == datadump.MissionID)
+                                {
+                                    FoundMissions = FoundMissions + 1;
+                                    mission.AcceptedTime = datadump.timestamp;
+                                    mission.LocalisedName = datadump.LocalisedName;
+                                    mission.reward = datadump.Reward;
+                                    mission.TargetFaction = datadump.TargetFaction;
+                                    mission.DestinationSystem = datadump.DestinationSystem;
+                                    mission.DestinationStation = datadump.DestinationStation;
+                                    mission.Expiry = datadump.Expiry;
+                                    mission.type = MissionType;
+                                    mission.Commodity = datadump.Commodity;
+                                }
+                            }
+
+                        }
+
+                        else if (datadump.name.StartsWith("Mission_Disable"))
+
+                        {
+
+                            foreach (var mission in ActiveMissionList)
+                            {
+
+                                // Debug.Log(datadump.MissionID);
+                                if (mission.MissionID == datadump.MissionID)
+                                {
+                                    FoundMissions = FoundMissions + 1;
+                                    mission.AcceptedTime = datadump.timestamp;
+                                    mission.LocalisedName = datadump.LocalisedName;
+                                    mission.reward = datadump.Reward;
+                                    mission.TargetFaction = datadump.TargetFaction;
+                                    mission.Expiry = datadump.Expiry;
+                                    mission.type = MissionType;
+                                }
+                            }
+
+                        }
+
                     }
-                
-                // Populate ended missions list
-                if (datadump.@event == "MissionCompleted" || datadump.@event == "MissionAbandoned" || datadump.@event == "MissionFailed")
+
+                    // Populate ended missions list
+                    if (datadump.@event == "MissionCompleted" || datadump.@event == "MissionAbandoned" || datadump.@event == "MissionFailed")
+                    {
+
+                        EndedMissionList.Add(new MissionEnd { MissionID = datadump.MissionID });
+                    }
+
+                }
+                else
                 {
-                  
-                    EndedMissionList.Add(new MissionEnd { MissionID = datadump.MissionID });
+                    Debug.Log("game not loaded");
+                    if (datadump.@event == "Commander" || datadump.part > 1)
+                    {
+                        Debug.Log("Commander event found!");
+                        JournalLine = 1;
+
+                        //GetFile();
+                    }
                 }
             }
 
@@ -356,14 +472,17 @@ public class GrabLog : MonoBehaviour
 
     public void ScrollJournals()
     {
-        if (FoundMissions < JournalStartMissions)
+        if (FoundMissions < JournalStartMissions && JournalLine < 2)
         {
+            Debug.Log("Mission counts " + FoundMissions + " " + JournalStartMissions);
             FileNumber = FileNumber+1;
           
             GetFile();
         }
         else
         {
+            FileNumber = 0;
+            JournalLine = 2;
             MissionCleanse();
             KillCountUpdate();
         }
@@ -531,6 +650,10 @@ public class GrabLog : MonoBehaviour
             }
         }
         
+        if (ActiveMissionCount > 3)
+        {
+            ActiveMissionCount = 3;
+        }
 
         for (int i = 0; i < ActiveMissionCount; i++)
         {
@@ -555,7 +678,7 @@ public class GrabLog : MonoBehaviour
             MissionImage.GetComponent<Image>().overrideSprite = Mission;
 
             MissionDetails.GetComponent<Text>().text = ActiveMissionList[i].type +  " " + ActiveMissionList[i].Target + " " +ActiveMissionList[i].TargetType_Localised +
-                " System: " + ActiveMissionList[i].DestinationSystem + " - "+ ActiveMissionList[i].distance.ToString("f1") + " ly " +
+                " System: " + ActiveMissionList[i].DestinationSystem + " - " + ActiveMissionList[i].DestinationStation + " " + ActiveMissionList[i].distance.ToString("f1") + " ly " +
                 "\n"+ ActiveMissionList[i].reward.ToString("n0") + " cr " + countdown.Hours.ToString() +" hrs " + countdown.Minutes.ToString() + " Minutes "+ countdown.Seconds.ToString() + " Secs remaining";
         }
         SetActiveMission();

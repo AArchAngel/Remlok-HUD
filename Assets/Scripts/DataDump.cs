@@ -21,12 +21,23 @@ public class DataDump
     public string VictimFaction { get; set; }
     public string[] StarPos { get; set; }
     public JournalArrays[] Active { get; set; }
+    public int Count { get; set; }
+    public string Commodity { get; set; }
+    public string DestinationStation { get; set; }
+    public int PassengerCount { get; set; }
+    public bool PassengerVIPs { get; set; }
+    public bool PassengerWanted { get; set; }
+    public string PassengerType { get; set; }
+    public string Influence { get; set; }
+    public string Reputation { get; set; }
+    public int part { get; set; }
 }
 [System.Serializable]
 public class JournalArrays
 { 
      public string MissionID { get; set; }
     public string Name { get; set; }
+    public int Expires { get; set; }
 }
 public class MissionAdd
 {
@@ -50,6 +61,13 @@ public class MissionAdd
     public int TotalKills = 0;
     public string type;
     public bool active = false;
+    public int Count;
+    public string Commodity;
+    public string DestinationStation;
+    public int PassengerCount;
+    public bool PassengerVIPs;
+    public bool PassengerWanted;
+    public string PassengerType;
 
 }
 public class MissionEnd
