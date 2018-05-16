@@ -237,6 +237,7 @@ public class GrabLog : MonoBehaviour
                         {
                             //Set to 2 when Missions event found
                             Debug.Log("Missions event found");
+                            JournalLine = 2;
 
                             try
                             {
