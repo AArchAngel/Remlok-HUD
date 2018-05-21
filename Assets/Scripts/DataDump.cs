@@ -10,6 +10,7 @@ public class DataDump
     public string Commander { get; set; }
     public string LocalisedName { get; set; }
     public string TargetType_Localised { get; set; }
+    public string Target_Localised { get; set; }
     public string TargetFaction { get; set; }
     public int KillCount { get; set; }
     public string DestinationSystem { get; set; }
