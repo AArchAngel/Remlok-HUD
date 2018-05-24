@@ -12,6 +12,7 @@ public class DataDump
     public string TargetType_Localised { get; set; }
     public string Target_Localised { get; set; }
     public string TargetFaction { get; set; }
+    public string Faction { get; set; }
     public int KillCount { get; set; }
     public string DestinationSystem { get; set; }
     public int Reward { get; set; }
@@ -23,7 +24,7 @@ public class DataDump
     public string[] StarPos { get; set; }
     public JournalArrays[] Active { get; set; }
     public int Count { get; set; }
-    public string Commodity { get; set; }
+    public string Commodity_Localised { get; set; }
     public string DestinationStation { get; set; }
     public int PassengerCount { get; set; }
     public bool PassengerVIPs { get; set; }
@@ -49,6 +50,9 @@ public class MissionAdd
     public string LocalisedName;
     public string TargetType_Localised;
     public string TargetFaction;
+    public string Faction;
+    public string Reputation;
+    public string Influence;
     public int KillCount;
     public string Target;
     public string DestinationSystem;
