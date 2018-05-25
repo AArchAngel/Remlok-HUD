@@ -318,6 +318,7 @@ public class GrabLog : MonoBehaviour
                         if (datadump.@event == "FSDJump")
                         {
                             PlayerLocation = new Vector3(float.Parse(datadump.StarPos[0]), float.Parse(datadump.StarPos[1]), float.Parse(datadump.StarPos[2]));
+                            InSystemMissionsCount = 0;
                             MissionPopup = 0;
                         }
 
